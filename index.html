@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SerialForge — Serial Number Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0c0c0e;
+    --surface: #131316;
+    --surface2: #1a1a1f;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --accent: #e8ff47;
+    --accent2: #47ffcc;
+    --text: #f0ede8;
+    --muted: #888890;
+    --danger: #ff5a5a;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --display: 'Syne', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Accent glow */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 400px;
+    background: radial-gradient(ellipse, rgba(232,255,71,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 0 48px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+
+  .logo {
+    font-family: var(--display);
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.7); }
+  }
+
+  .header-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* PAGE TITLE */
+  .page-title {
+    margin-bottom: 40px;
+  }
+
+  .page-title h1 {
+    font-family: var(--display);
+    font-size: clamp(36px, 5vw, 56px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -2px;
+    margin-bottom: 12px;
+  }
+
+  .page-title h1 span { color: var(--accent); }
+
+  .page-title p {
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 300;
+    max-width: 500px;
+  }
+
+  /* LAYOUT */
+  .main-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  @media (max-width: 800px) {
+    .main-layout { grid-template-columns: 1fr; }
+  }
+
+  /* PANELS */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .panel-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+
+  .panel-body { padding: 20px; }
+
+  /* FORM ELEMENTS */
+  .field-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .field-group.full { grid-template-columns: 1fr; }
+  .field-group.thirds { grid-template-columns: 1fr 1fr 1fr; }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  .field label {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+
+  .field input,
+  .field select {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+    appearance: none;
+  }
+
+  .field select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+
+  .field input:focus,
+  .field select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(232,255,71,0.08);
+  }
+
+  .field input::placeholder { color: #444; }
+
+  .field-hint {
+    font-size: 11px;
+    color: #555;
+    font-family: var(--mono);
+  }
+
+  .field-error {
+    font-size: 11px;
+    color: var(--danger);
+    display: none;
+  }
+
+  /* SEPARATOR */
+  .sep {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 20px 0;
+  }
+
+  /* BUTTONS */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .btn {
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 11px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn:active { transform: scale(0.97); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #0c0c0e;
+    flex: 1;
+  }
+
+  .btn-primary:hover { box-shadow: 0 0 20px rgba(232,255,71,0.3); }
+
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border2);
+  }
+
+  .btn-secondary:hover { border-color: rgba(255,255,255,0.25); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    font-size: 12px;
+  }
+
+  .btn-ghost:hover { color: var(--text); border-color: var(--border2); }
+
+  /* OUTPUT DISPLAY */
+  .sn-display {
+    background: #080809;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sn-display::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+
+  .sn-display.active::before { opacity: 1; }
+
+  .sn-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #444;
+    margin-bottom: 10px;
+  }
+
+  .sn-value {
+    font-family: var(--mono);
+    font-size: clamp(18px, 3vw, 26px);
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.03em;
+    word-break: break-all;
+    min-height: 36px;
+    transition: opacity 0.2s;
+  }
+
+  .sn-value.placeholder { color: #333; font-size: 18px; }
+
+  /* BREAKDOWN */
+  .breakdown {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .seg {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    transition: border-color 0.2s;
+  }
+
+  .seg.lit { border-color: rgba(232,255,71,0.3); }
+
+  .seg-lbl {
+    font-family: var(--mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #444;
+    margin-bottom: 4px;
+  }
+
+  .seg-val {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  /* COPY ROW */
+  .copy-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .copy-row .btn { font-size: 12px; padding: 9px 16px; }
+
+  .copied-flash {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent2);
+    align-self: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+    margin-left: 4px;
+  }
+
+  /* BATCH SECTION */
+  .batch-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .batch-controls .field { flex: 1; min-width: 120px; }
+
+  /* HISTORY */
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 320px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border2) transparent;
+  }
+
+  .history-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    animation: slideIn 0.2s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .history-item:hover { border-color: var(--border2); background: #1e1e24; }
+
+  .history-sn {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    flex: 1;
+    word-break: break-all;
+  }
+
+  .history-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: #444;
+    flex-shrink: 0;
+  }
+
+  .history-copy {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .history-copy:hover { border-color: var(--accent); color: var(--accent); }
+
+  .empty-state {
+    text-align: center;
+    padding: 32px 20px;
+    color: #444;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  /* BATCH OUTPUT */
+  .batch-output {
+    background: #080809;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    max-height: 200px;
+    overflow-y: auto;
+    line-height: 1.9;
+    white-space: pre;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border2) transparent;
+    display: none;
+  }
+
+  /* JULIAN PREVIEW */
+  .julian-tag {
+    display: inline-block;
+    background: rgba(232,255,71,0.08);
+    border: 1px solid rgba(232,255,71,0.2);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-top: 4px;
+  }
+
+  /* STATUS BAR */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: #555;
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #444;
+    flex-shrink: 0;
+  }
+
+  .status-dot.ok { background: var(--accent2); box-shadow: 0 0 8px var(--accent2); }
+  .status-dot.err { background: var(--danger); }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 2px;
+    padding: 4px;
+    background: var(--surface2);
+    border-radius: 8px;
+  }
+
+  .tab {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .tab.active {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border2);
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* COUNTER BADGE */
+  .count-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 99px;
+    background: rgba(232,255,71,0.12);
+    color: var(--accent);
+    border: 1px solid rgba(232,255,71,0.2);
+  }
+
+  /* FORMULA DISPLAY */
+  .formula {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .formula-seg {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+
+  .formula-sep { color: #333; font-size: 14px; }
+
+  .fs-part { background: rgba(232,255,71,0.1); color: var(--accent); border: 1px solid rgba(232,255,71,0.2); }
+  .fs-rev  { background: rgba(71,255,204,0.1); color: var(--accent2); border: 1px solid rgba(71,255,204,0.2); }
+  .fs-jul  { background: rgba(147,112,255,0.1); color: #9f80ff; border: 1px solid rgba(147,112,255,0.2); }
+  .fs-seq  { background: rgba(255,130,71,0.1); color: #ff9347; border: 1px solid rgba(255,130,71,0.2); }
+
+  /* EXPORT */
+  .export-row { display: flex; gap: 8px; margin-top: 12px; }
+
+  .notification {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 12px 18px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 100;
+    max-width: 340px;
+  }
+
+  .notification.show { transform: translateY(0); opacity: 1; }
+  .notification-icon { color: var(--accent); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <header>
+    <div class="logo">
+      <div class="logo-dot"></div>
+      SerialForge
+    </div>
+    <div class="header-meta">Serial Number Management System</div>
+  </header>
+
+  <div class="page-title">
+    <h1>Serial Number<br /><span>Generator</span></h1>
+    <p>Build structured serial numbers following Part# – Revision – Julian Date – Sequence format.</p>
+  </div>
+
+  <div class="formula">
+    <span class="formula-seg fs-part">PART#</span>
+    <span class="formula-sep">–</span>
+    <span class="formula-seg fs-rev">REV</span>
+    <span class="formula-sep">–</span>
+    <span class="formula-seg fs-jul">YYDDD</span>
+    <span class="formula-seg fs-seq">NNN</span>
+    <span style="margin-left: auto; font-size: 11px; color: #333;">e.g. ABCD1234-R03-26090028</span>
+  </div>
+
+  <div class="main-layout">
+
+    <!-- LEFT COLUMN -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+
+      <!-- CONFIG PANEL -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Configuration</span>
+          <div class="tabs">
+            <button class="tab active" onclick="switchTab('single')">Single</button>
+            <button class="tab" onclick="switchTab('batch')">Batch</button>
+          </div>
+        </div>
+        <div class="panel-body">
+
+          <!-- PART NUMBER -->
+          <div class="field-group full">
+            <div class="field">
+              <label>Part number</label>
+              <input type="text" id="partNum" placeholder="e.g. XX-ABCD-1234" maxlength="50" oninput="livePreview()" />
+              <span class="field-error" id="err-part">Part number is required</span>
+            </div>
+          </div>
+
+          <!-- REVISION -->
+          <div class="field-group thirds">
+            <div class="field">
+              <label>Rev letter</label>
+              <select id="revLetter" onchange="livePreview()">
+                <option value="">— None —</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Rev number</label>
+              <input type="number" id="revNum" min="0" max="99" value="3" oninput="livePreview()" />
+            </div>
+            <div class="field">
+              <label>Preview</label>
+              <div style="display: flex; align-items: center; height: 40px;">
+                <span id="revPreview" style="font-family: var(--mono); font-size: 15px; font-weight: 500; color: var(--accent2);">R03</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- DATE -->
+          <div class="field-group">
+            <div class="field">
+              <label>Production date</label>
+              <input type="date" id="prodDate" onchange="livePreview()" />
+              <div id="julianTag" class="julian-tag" style="display:none;"></div>
+            </div>
+            <div class="field">
+              <label>Starting sequence #</label>
+              <input type="number" id="seqNum" min="1" max="999" value="1" oninput="livePreview()" />
+              <span class="field-hint" id="seqPreview">→ 001</span>
+            </div>
+          </div>
+
+          <!-- BATCH CONTROLS -->
+          <div class="tab-content" id="tab-batch">
+            <hr class="sep" />
+            <div class="batch-controls">
+              <div class="field">
+                <label>Quantity</label>
+                <input type="number" id="batchQty" min="1" max="500" value="10" placeholder="10" />
+              </div>
+              <div class="field">
+                <label>Increment date each</label>
+                <select id="batchDateMode">
+                  <option value="same">Same date for all</option>
+                  <option value="daily">Increment daily</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <hr class="sep" />
+
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="generate()">Generate</button>
+            <button class="btn btn-secondary" id="nextBtn" onclick="generateAndNext()" title="Generate and auto-increment sequence">+ Next</button>
+            <button class="btn btn-ghost" onclick="resetForm()">Reset</button>
+          </div>
+
+        </div>
+
+        <div class="status-bar">
+          <div class="status-dot" id="statusDot"></div>
+          <span id="statusText">Awaiting input…</span>
+        </div>
+      </div>
+
+      <!-- BATCH OUTPUT -->
+      <div class="panel" id="batchPanel" style="display:none;">
+        <div class="panel-header">
+          <span class="panel-title">Batch output</span>
+          <span class="count-badge" id="batchCount">0</span>
+        </div>
+        <div class="panel-body">
+          <div class="batch-output" id="batchOutput"></div>
+          <div class="export-row">
+            <button class="btn btn-ghost" onclick="exportCSV()">Export CSV</button>
+            <button class="btn btn-ghost" onclick="copyBatch()">Copy all</button>
+            <button class="btn btn-ghost" onclick="clearBatch()">Clear</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+
+      <!-- OUTPUT PANEL -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Output</span>
+        </div>
+        <div class="panel-body">
+
+          <div class="sn-display" id="snDisplay">
+            <div class="sn-label">Serial number</div>
+            <div class="sn-value placeholder" id="snValue">Awaiting generation…</div>
+          </div>
+
+          <div class="breakdown">
+            <div class="seg" id="seg-part">
+              <div class="seg-lbl">Part#</div>
+              <div class="seg-val" id="seg-part-val">—</div>
+            </div>
+            <div class="seg" id="seg-rev">
+              <div class="seg-lbl">Revision</div>
+              <div class="seg-val" id="seg-rev-val">—</div>
+            </div>
+            <div class="seg" id="seg-julian">
+              <div class="seg-lbl">Julian</div>
+              <div class="seg-val" id="seg-julian-val">—</div>
+            </div>
+            <div class="seg" id="seg-seq">
+              <div class="seg-lbl">Seq</div>
+              <div class="seg-val" id="seg-seq-val">—</div>
+            </div>
+          </div>
+
+          <div class="copy-row">
+            <button class="btn btn-secondary" onclick="copySN()">Copy SN</button>
+            <button class="btn btn-ghost" onclick="addToQueue()">+ Queue</button>
+            <span class="copied-flash" id="copiedFlash">✓ Copied</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- HISTORY PANEL -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">History</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="count-badge" id="historyCount">0</span>
+            <button class="btn btn-ghost" style="padding: 4px 10px; font-size: 10px;" onclick="clearHistory()">Clear</button>
+          </div>
+        </div>
+        <div class="panel-body" style="padding: 12px;">
+          <div class="history-list" id="historyList">
+            <div class="empty-state">No serial numbers generated yet.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="notification" id="notification">
+  <span class="notification-icon">✓</span>
+  <span id="notifText">Done</span>
+</div>
+
+<script>
+  // Init rev letter select
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  const sel = document.getElementById('revLetter');
+  letters.forEach((l, i) => {
+    const o = document.createElement('option');
+    o.value = l;
+    o.textContent = `${l} = ${String(i+1).padStart(2,'0')}`;
+    sel.appendChild(o);
+  });
+
+  // Set today
+  const today = new Date();
+  const ymd = today.toISOString().slice(0,10);
+  document.getElementById('prodDate').value = ymd;
+
+  livePreview();
+
+  function toJulian(dateStr) {
+    if (!dateStr) return null;
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const start = new Date(y, 0, 0);
+    const date = new Date(y, m-1, d);
+    const day = Math.floor((date - start) / 86400000);
+    const yy = String(y).slice(-2);
+    const ddd = String(day).padStart(3,'0');
+    return { code: `${yy}${ddd}`, yy, ddd, year: y };
+  }
+
+  function addDays(dateStr, n) {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dt = new Date(y, m-1, d+n);
+    return dt.toISOString().slice(0,10);
+  }
+
+  function livePreview() {
+    const revL = document.getElementById('revLetter').value;
+    const revN = String(parseInt(document.getElementById('revNum').value)||0).padStart(2,'0');
+    document.getElementById('revPreview').textContent = `R${revN}`;
+
+    const seqRaw = parseInt(document.getElementById('seqNum').value)||1;
+    document.getElementById('seqPreview').textContent = `→ ${String(seqRaw).padStart(3,'0')}`;
+
+    const dateVal = document.getElementById('prodDate').value;
+    const j = toJulian(dateVal);
+    if (j) {
+      const tag = document.getElementById('julianTag');
+      tag.style.display = 'inline-block';
+      tag.textContent = `${j.code} · ${j.year}, day ${parseInt(j.ddd)}`;
+    }
+
+    updateStatus();
+  }
+
+  function updateStatus() {
+    const part = document.getElementById('partNum').value.trim();
+    const dot = document.getElementById('statusDot');
+    const txt = document.getElementById('statusText');
+    if (!part) {
+      dot.className = 'status-dot';
+      txt.textContent = 'Enter a part number to begin';
+    } else {
+      dot.className = 'status-dot ok';
+      txt.textContent = `Ready · Part: ${part}`;
+    }
+  }
+
+  const history = [];
+  let lastSN = null;
+
+  function buildSN(dateStr, seqNum) {
+    const part = document.getElementById('partNum').value.trim();
+    if (!part) {
+      document.getElementById('err-part').style.display = 'block';
+      return null;
+    }
+    document.getElementById('err-part').style.display = 'none';
+    const revN = String(parseInt(document.getElementById('revNum').value)||0).padStart(2,'0');
+    const j = toJulian(dateStr || document.getElementById('prodDate').value);
+    if (!j) return null;
+    const seq = String(seqNum || parseInt(document.getElementById('seqNum').value)||1).padStart(3,'0');
+    return { sn: `${part}-R${revN}-${j.code}${seq}`, part, rev: `R${revN}`, julian: j.code, seq };
+  }
+
+  function generate() {
+    const result = buildSN();
+    if (!result) return null;
+    displaySN(result);
+    pushHistory(result.sn);
+    lastSN = result.sn;
+    return result;
+  }
+
+  function generateAndNext() {
+    const result = generate();
+    if (!result) return;
+    const seqEl = document.getElementById('seqNum');
+    seqEl.value = (parseInt(seqEl.value)||1) + 1;
+    livePreview();
+  }
+
+  function displaySN(result) {
+    const display = document.getElementById('snDisplay');
+    const val = document.getElementById('snValue');
+    val.textContent = result.sn;
+    val.className = 'sn-value';
+    display.classList.add('active');
+    document.getElementById('seg-part-val').textContent = result.part;
+    document.getElementById('seg-rev-val').textContent = result.rev;
+    document.getElementById('seg-julian-val').textContent = result.julian;
+    document.getElementById('seg-seq-val').textContent = result.seq;
+    ['seg-part','seg-rev','seg-julian','seg-seq'].forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.add('lit');
+      setTimeout(() => el.classList.remove('lit'), 1200);
+    });
+  }
+
+  function pushHistory(sn) {
+    history.unshift({ sn, time: new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) });
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const list = document.getElementById('historyList');
+    document.getElementById('historyCount').textContent = history.length;
+    if (!history.length) {
+      list.innerHTML = '<div class="empty-state">No serial numbers generated yet.</div>';
+      return;
+    }
+    list.innerHTML = '';
+    history.slice(0,50).forEach(h => {
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      item.innerHTML = `
+        <span class="history-sn">${h.sn}</span>
+        <span class="history-meta">${h.time}</span>
+        <button class="history-copy" onclick="copyText('${h.sn}', event)" title="Copy">⎘</button>
+      `;
+      list.appendChild(item);
+    });
+  }
+
+  function clearHistory() {
+    history.length = 0;
+    renderHistory();
+    notify('History cleared');
+  }
+
+  function copySN() {
+    const val = document.getElementById('snValue').textContent;
+    if (val === 'Awaiting generation…') return;
+    copyText(val);
+    const flash = document.getElementById('copiedFlash');
+    flash.style.opacity = '1';
+    setTimeout(() => flash.style.opacity = '0', 1800);
+  }
+
+  function copyText(text, e) {
+    if (e) e.stopPropagation();
+    navigator.clipboard.writeText(text).then(() => notify('Copied: ' + text));
+  }
+
+  function addToQueue() {
+    const val = document.getElementById('snValue').textContent;
+    if (val === 'Awaiting generation…') return;
+    notify('Added to queue (batch)');
+  }
+
+  // TABS
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.textContent.toLowerCase().trim() === tab));
+    document.getElementById('tab-batch').classList.toggle('active', tab === 'batch');
+    document.getElementById('nextBtn').style.display = tab === 'batch' ? 'none' : '';
+    if (tab === 'batch') {
+      document.querySelector('.btn-primary').textContent = 'Generate Batch';
+      document.querySelector('.btn-primary').onclick = generateBatch;
+    } else {
+      document.querySelector('.btn-primary').textContent = 'Generate';
+      document.querySelector('.btn-primary').onclick = generate;
+    }
+  }
+
+  function generateBatch() {
+    const result = buildSN();
+    if (!result) return;
+    const qty = Math.min(parseInt(document.getElementById('batchQty').value)||10, 500);
+    const dateMode = document.getElementById('batchDateMode').value;
+    const baseDateStr = document.getElementById('prodDate').value;
+    const baseSeq = parseInt(document.getElementById('seqNum').value)||1;
+    const lines = [];
+
+    for (let i = 0; i < qty; i++) {
+      const dateStr = dateMode === 'daily' ? addDays(baseDateStr, i) : baseDateStr;
+      const r = buildSN(dateStr, baseSeq + i);
+      if (r) lines.push(r.sn);
+    }
+
+    const out = document.getElementById('batchOutput');
+    out.textContent = lines.join('\n');
+    out.style.display = 'block';
+    document.getElementById('batchPanel').style.display = 'block';
+    document.getElementById('batchCount').textContent = lines.length;
+    lines.forEach(sn => pushHistory(sn));
+    notify(`${lines.length} serial numbers generated`);
+  }
+
+  function copyBatch() {
+    const text = document.getElementById('batchOutput').textContent;
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => notify('All serial numbers copied'));
+  }
+
+  function exportCSV() {
+    const lines = document.getElementById('batchOutput').textContent.trim().split('\n');
+    if (!lines[0]) return;
+    const csv = 'Serial Number\n' + lines.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `serial-numbers-${Date.now()}.csv`;
+    a.click();
+    notify('CSV exported');
+  }
+
+  function clearBatch() {
+    document.getElementById('batchOutput').textContent = '';
+    document.getElementById('batchOutput').style.display = 'none';
+    document.getElementById('batchPanel').style.display = 'none';
+    document.getElementById('batchCount').textContent = '0';
+  }
+
+  function resetForm() {
+    document.getElementById('partNum').value = '';
+    document.getElementById('revLetter').value = '';
+    document.getElementById('revNum').value = '3';
+    document.getElementById('seqNum').value = '1';
+    document.getElementById('prodDate').value = ymd;
+    document.getElementById('snValue').textContent = 'Awaiting generation…';
+    document.getElementById('snValue').className = 'sn-value placeholder';
+    document.getElementById('snDisplay').classList.remove('active');
+    ['seg-part-val','seg-rev-val','seg-julian-val','seg-seq-val'].forEach(id => document.getElementById(id).textContent = '—');
+    document.getElementById('err-part').style.display = 'none';
+    livePreview();
+  }
+
+  let notifTimer;
+  function notify(msg) {
+    const el = document.getElementById('notification');
+    document.getElementById('notifText').textContent = msg;
+    el.classList.add('show');
+    clearTimeout(notifTimer);
+    notifTimer = setTimeout(() => el.classList.remove('show'), 2500);
+  }
+
+  // Keyboard shortcut: Enter to generate
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.tagName === 'INPUT') generate();
+  });
+
+  document.getElementById('partNum').addEventListener('input', livePreview);
+  document.getElementById('revLetter').addEventListener('change', livePreview);
+</script>
+</body>
+</html>
