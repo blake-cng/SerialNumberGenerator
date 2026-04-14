@@ -895,16 +895,21 @@
   let lastSN = null;
 
   function buildSN(dateStr, seqNum) {
+    // Grabs the part number and completely strips out any hyphens the user types
     const part = document.getElementById('partNum').value.trim().replace(/-/g, '');
+    
     if (!part) {
       document.getElementById('err-part').style.display = 'block';
       return null;
     }
     document.getElementById('err-part').style.display = 'none';
+    
     const revN = String(parseInt(document.getElementById('revNum').value)||0).padStart(2,'0');
     const j = toJulian(dateStr || document.getElementById('prodDate').value);
     if (!j) return null;
     const seq = String(seqNum || parseInt(document.getElementById('seqNum').value)||1).padStart(3,'0');
+    
+    // Assembles the string with NO hyphen before the Revision, ONLY before the Julian Date
     return { sn: `${part}R${revN}-${j.code}${seq}`, part, rev: `R${revN}`, julian: j.code, seq };
   }
 
