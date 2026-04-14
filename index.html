@@ -638,13 +638,12 @@
   </div>
 
   <div class="formula">
-    <span class="formula-seg fs-part">PART#</span>
-    <span class="formula-sep">–</span>
-    <span class="formula-seg fs-rev">REV</span>
-    <span class="formula-sep">–</span>
-    <span class="formula-seg fs-jul">YYDDD</span>
-    <span class="formula-seg fs-seq">NNN</span>
-    <span style="margin-left: auto; font-size: 11px; color: #333;">e.g. ABCD1234-R03-26090028</span>
+  <span class="formula-seg fs-part">PART#</span>
+  <span class="formula-seg fs-rev">REV</span>
+  <span class="formula-sep">–</span>
+  <span class="formula-seg fs-jul">YYDDD</span>
+  <span class="formula-seg fs-seq">NNN</span>
+  <span style="margin-left: auto; font-size: 11px; color: #333;">e.g. ABCD1234R03-26090028</span> 
   </div>
 
   <div class="main-layout">
@@ -896,7 +895,7 @@
   let lastSN = null;
 
   function buildSN(dateStr, seqNum) {
-    const part = document.getElementById('partNum').value.trim();
+    const part = document.getElementById('partNum').value.trim().replace(/-/g, '');
     if (!part) {
       document.getElementById('err-part').style.display = 'block';
       return null;
@@ -906,7 +905,7 @@
     const j = toJulian(dateStr || document.getElementById('prodDate').value);
     if (!j) return null;
     const seq = String(seqNum || parseInt(document.getElementById('seqNum').value)||1).padStart(3,'0');
-    return { sn: `${part}-R${revN}-${j.code}${seq}`, part, rev: `R${revN}`, julian: j.code, seq };
+    return { sn: `${part}R${revN}-${j.code}${seq}`, part, rev: `R${revN}`, julian: j.code, seq };
   }
 
   function generate() {
